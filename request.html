@@ -365,6 +365,7 @@
     btn.textContent = 'Submitting…';
 
     var result = await sb.from('requests_queue').insert([{
+      id:           crypto.randomUUID(),
       name:         naturesStr,
       description:  desc,
       requested_by: name + ' (' + email + ')',
