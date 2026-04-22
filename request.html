@@ -378,7 +378,7 @@
     btn.textContent = 'Submit Request →';
 
     if (result.error) {
-      errEl.textContent = 'Something went wrong. Please try again or email victoria@tadhealth.com.';
+      errEl.textContent = 'Error: ' + (result.error.message || JSON.stringify(result.error)) + ' — Please email victoria@tadhealth.com if this persists.';
       errEl.style.display = 'block';
     } else {
       document.getElementById('success-name').textContent = 'Request submitted, ' + name + '!';
