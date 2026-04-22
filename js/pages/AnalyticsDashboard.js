@@ -121,6 +121,71 @@ function AnalyticsDashboard(props) {
   var bigNumStyle  = function(clr) { return { fontSize: 28, fontWeight: 800, color: clr || "#023F5A", fontFamily: "'Onest',sans-serif", lineHeight: 1 }; };
   var subLblStyle  = { fontSize: 11, color: "#8ba7b3", fontWeight: 600, marginTop: 3, display: "block" };
 
+  // ── UR-only simple status view ─────────────────────────────────────────────
+  if (isUR) {
+    var urStatuses = [
+      { label: "Attending",     count: confirmed.length,    color: UR.teal   },
+      { label: "Considering",   count: considering.length,  color: UR.orange },
+      { label: "Not Attending", count: notAttending.length, color: UR.gray   },
+      { label: "Attended ✓",    count: attended.length,     color: "#35928b" }
+    ];
+    return e("div", { style: { fontFamily: "'IBM Plex Sans',system-ui,sans-serif", color: "#011a26" } },
+      e("div", { style: { marginBottom: 24 } },
+        e("h2", { style: { fontFamily: "'Onest',sans-serif", fontSize: 26, fontWeight: 800, color: UR.primaryDark, margin: 0 } }, "Event Status Overview"),
+        e("p",  { style: { fontSize: 13, color: "#8ba7b3", marginTop: 4, margin: 0 } }, "Status breakdown across all User-Rev events")
+      ),
+      // ── KPI cards ──────────────────────────────────────────────────────────
+      e("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 12, marginBottom: 24 } },
+        [
+          { val: events.length,    label: "Total Tracked",       icon: "📋", color: UR.primaryDark },
+          { val: confirmed.length, label: "Confirmed Attending", icon: "✅", color: "#35928b"      },
+          { val: attended.length,  label: "Attended",            icon: "🎯", color: "#35928b"      }
+        ].map(function(k) {
+          return e("div", { key: k.label, style: { background: "#fff", borderRadius: 14, border: "1.5px solid #e6ecef", padding: "16px 18px", boxShadow: "0 2px 12px rgba(174,111,138,0.06)" } },
+            e("div", { style: { fontSize: 18, marginBottom: 6 } }, k.icon),
+            e("div", { style: { fontSize: 28, fontWeight: 800, color: k.color, fontFamily: "'Onest',sans-serif", lineHeight: 1 } }, k.val),
+            e("span", { style: { fontSize: 11, color: "#8ba7b3", fontWeight: 600, marginTop: 3, display: "block" } }, k.label)
+          );
+        })
+      ),
+      // ── Status breakdown ───────────────────────────────────────────────────
+      e("div", { style: { background: "#fff", borderRadius: 14, border: "1.5px solid #e6ecef", padding: "18px 22px", boxShadow: "0 2px 12px rgba(174,111,138,0.06)", marginBottom: 14 } },
+        e("span", { style: { fontFamily: "'Onest',sans-serif", fontWeight: 700, fontSize: 13, color: UR.primaryDark, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 14, display: "block" } }, "📊 Status Breakdown"),
+        e("div", { style: { display: "flex", flexDirection: "column", gap: 10 } },
+          urStatuses.map(function(s) {
+            var pct = events.length > 0 ? ((s.count / events.length) * 100).toFixed(0) : 0;
+            return e("div", { key: s.label },
+              e("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 } },
+                e("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
+                  e("div", { style: { width: 10, height: 10, borderRadius: 2, background: s.color, flexShrink: 0 } }),
+                  e("span", { style: { fontSize: 13, fontWeight: 600, color: UR.primaryDark } }, s.label)
+                ),
+                e("div", { style: { display: "flex", gap: 14, alignItems: "center" } },
+                  e("span", { style: { fontSize: 12, color: "#8ba7b3" } }, s.count + " event" + (s.count !== 1 ? "s" : "")),
+                  e("span", { style: { fontSize: 12, fontWeight: 700, color: s.color } }, pct + "%")
+                )
+              ),
+              e("div", { style: { background: "#f0e8ed", borderRadius: 99, height: 7, overflow: "hidden" } },
+                e("div", { style: { height: "100%", width: pct + "%", background: s.color, borderRadius: 99, transition: "width 0.5s ease" } })
+              )
+            );
+          })
+        )
+      ),
+      // ── Strategy notes ─────────────────────────────────────────────────────
+      e("div", { style: { background: "#fff", borderRadius: 14, border: "1.5px solid #e6ecef", padding: "18px 22px", boxShadow: "0 2px 12px rgba(174,111,138,0.06)" } },
+        e("span", { style: { fontFamily: "'Onest',sans-serif", fontWeight: 700, fontSize: 13, color: UR.primaryDark, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 14, display: "block" } }, "📝 Strategy Notes & Takeaways"),
+        e("textarea", {
+          value: noteState.note,
+          onChange: function(ev) { noteState.saveNote(ev.target.value); },
+          rows: 4,
+          placeholder: "Add key takeaways, lessons learned, recommendations…",
+          style: { width: "100%", border: "1.5px solid #e6ecef", borderRadius: 10, padding: "12px 14px", fontSize: 13, fontFamily: "inherit", color: "#011a26", background: "#fafcfd", resize: "vertical", boxSizing: "border-box", outline: "none", lineHeight: 1.6 }
+        })
+      )
+    );
+  }
+
   return e("div", { style: { fontFamily: "'IBM Plex Sans',system-ui,sans-serif", color: "#011a26" } },
 
     // ── Page header ────────────────────────────────────────────────────────
