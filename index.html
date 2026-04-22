@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TadHealth Marketing Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Onest:wght@700;800&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+    #root { min-height: 100vh; }
+    select option { background: #fff; color: #011a26; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- ── CDN libraries ─────────────────────────────────────── -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/supabase-js/2.7.1/umd/supabase-js.min.js"></script>
+
+  <!-- ── App scripts (load order is critical) ──────────────── -->
+
+  <!-- 1. Config: globals (e, useState, etc.), Supabase client, LOGO, inp -->
+  <script src="js/config.js"></script>
+
+  <!-- 2. Constants: C, UR palettes, lookup tables -->
+  <script src="js/constants.js"></script>
+
+  <!-- 3. Helpers: pure conversion functions -->
+  <script src="js/helpers.js"></script>
+
+  <!-- 4. Hooks: data + auth logic -->
+  <script src="js/hooks/useAuth.js"></script>
+  <script src="js/hooks/useTasks.js"></script>
+  <script src="js/hooks/useConferences.js"></script>
+  <script src="js/hooks/useContentItems.js"></script>
+  <script src="js/hooks/useAnalyticsNote.js"></script>
+
+  <!-- 5. Shared UI components -->
+  <script src="js/components/SharedUI.js"></script>
+  <script src="js/components/ConferenceModal.js"></script>
+
+  <!-- 6. Page components -->
+  <script src="js/pages/LoginPage.js"></script>
+  <script src="js/pages/HubPage.js"></script>
+  <script src="js/pages/TaskModal.js"></script>
+  <script src="js/pages/KanbanPage.js"></script>
+  <script src="js/pages/ContentItemModal.js"></script>
+  <script src="js/pages/CalendarPage.js"></script>
+  <script src="js/pages/AnalyticsDashboard.js"></script>
+  <script src="js/pages/EventsPage.js"></script>
+
+  <!-- 7. Root App + mount (must be last) -->
+  <script src="js/App.js"></script>
+</body>
+</html>
