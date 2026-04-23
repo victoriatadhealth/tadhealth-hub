@@ -314,7 +314,7 @@ function ConferenceModal(props) {
           // BizDev metrics row
           !isUR && e("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 } },
             e("div", null,
-              e("label", { style: lbl }, "Leads Generated"),
+              e("label", { style: lbl }, "SQLs"),
               e("input", { style: inp, type: "number", value: f.leadsGenerated || 0, onChange: function(ev) { set("leadsGenerated", +ev.target.value); } })
             ),
             e("div", null,
