@@ -220,7 +220,7 @@ function AnalyticsDashboard(props) {
         e("span", { style: headStyle }, "📈 Pipeline Performance"),
         e("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } },
           [
-            { val: totalLeads, label: "Leads Generated", color: "#4ACDC4" },
+            { val: totalLeads, label: "SQLs Generated", color: "#4ACDC4" },
             { val: totalMQLs,  label: "MQLs",            color: "#023F5A" },
             { val: totalDeals, label: "Deals Won",       color: "#35928b" },
             { val: "$" + totalRevenue.toLocaleString(), label: "Revenue Attributed", color: totalRevenue > 0 ? "#35928b" : "#8ba7b3" }
@@ -236,9 +236,9 @@ function AnalyticsDashboard(props) {
         e("span", { style: headStyle }, "🧠 Cost Efficiency"),
         e("div", { style: { display: "flex", flexDirection: "column", gap: 10 } },
           [
-            { label: "Cost per Lead",      val: costPerLead    ? "$" + parseInt(costPerLead).toLocaleString()  : "—", sub: "Attended spend ÷ leads generated" },
+            { label: "Cost per SQL",       val: costPerLead    ? "$" + parseInt(costPerLead).toLocaleString()  : "—", sub: "Attended spend ÷ SQLs generated" },
             { label: "Cost per MQL",       val: costPerMQL     ? "$" + parseInt(costPerMQL).toLocaleString()   : "—", sub: "Attended spend ÷ MQLs" },
-            { label: "Lead → MQL Rate",    val: leadToMQLRate  ? leadToMQLRate + "%"                           : "—", sub: "Of leads that became MQLs" },
+            { label: "SQL → MQL Rate",     val: leadToMQLRate  ? leadToMQLRate + "%"                           : "—", sub: "Of SQLs that became MQLs" },
             { label: "MQL → Deal Rate",    val: mqlToDealRate  ? mqlToDealRate + "%"                           : "—", sub: "Of MQLs that closed as deals" },
             { label: "Avg Revenue / Event",val: avgRevPerEvent ? "$" + parseInt(avgRevPerEvent).toLocaleString(): "—", sub: "Across attended events with revenue" }
           ].map(function(row) {
@@ -312,13 +312,36 @@ function AnalyticsDashboard(props) {
               roiEvents.slice(0, 6).map(function(c, i) {
                 var roi = +c._roi;
                 var clr = roi >= 100 ? "#35928b" : roi >= 0 ? "#4ACDC4" : roi > -50 ? "#f79824" : "#ae6f8a";
-                return e("div", { key: c.id, onClick: function() { onSelectEvent(c); }, style: { display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, background: "#f5f9fc", cursor: "pointer" } },
-                  e("span", { style: { fontSize: 13, fontWeight: 700, color: "#8ba7b3", width: 18, textAlign: "right", flexShrink: 0 } }, i + 1),
-                  e("div", { style: { flex: 1, minWidth: 0 } },
-                    e("div", { style: { fontSize: 13, fontWeight: 600, color: "#023F5A", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, c.name),
-                    e("div", { style: { fontSize: 11, color: "#b0c4cc" } }, "$" + c._spend.toLocaleString() + " spent · $" + c._revenue.toLocaleString() + " revenue")
+                // Parse closed-won contacts
+                var contacts = [];
+                try { var p = typeof c.contacts === "string" ? JSON.parse(c.contacts) : (c.contacts || []); contacts = Array.isArray(p) ? p.filter(function(x) { return x.closedWon; }) : []; } catch(_) {}
+                function calcRev(n) { n = parseInt(n,10)||0; if(n<=0) return 0; return n*(n>=20000?5:n>=10000?10:20); }
+                return e("div", { key: c.id, style: { borderRadius: 10, background: "#f5f9fc", marginBottom: 4, overflow: "hidden" } },
+                  // Main row
+                  e("div", { onClick: function() { onSelectEvent(c); }, style: { display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", cursor: "pointer" } },
+                    e("span", { style: { fontSize: 13, fontWeight: 700, color: "#8ba7b3", width: 18, textAlign: "right", flexShrink: 0 } }, i + 1),
+                    e("div", { style: { flex: 1, minWidth: 0 } },
+                      e("div", { style: { fontSize: 13, fontWeight: 600, color: "#023F5A", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, c.name),
+                      e("div", { style: { fontSize: 11, color: "#b0c4cc" } }, "$" + c._spend.toLocaleString() + " spent · $" + c._revenue.toLocaleString() + " revenue" + (contacts.length > 0 ? " · " + contacts.length + " closed" : ""))
+                    ),
+                    e("span", { style: { fontSize: 14, fontWeight: 800, color: clr, whiteSpace: "nowrap", fontFamily: "'Onest',sans-serif" } }, (roi >= 0 ? "+" : "") + roi + "%")
                   ),
-                  e("span", { style: { fontSize: 14, fontWeight: 800, color: clr, whiteSpace: "nowrap", fontFamily: "'Onest',sans-serif" } }, (roi >= 0 ? "+" : "") + roi + "%")
+                  // LEA contact rows
+                  contacts.length > 0 && e("div", { style: { borderTop: "1px solid #e6ecef", padding: "6px 12px 8px 40px" } },
+                    contacts.map(function(ct, ci) {
+                      var ctRev = calcRev(ct.studentCount);
+                      return e("div", { key: ci, style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: ci < contacts.length - 1 ? "1px dashed #eef2f4" : "none" } },
+                        e("div", { style: { minWidth: 0, flex: 1 } },
+                          e("div", { style: { fontSize: 12, fontWeight: 600, color: "#35928b" } }, ct.district || ct.name || "Unknown District"),
+                          e("div", { style: { fontSize: 10, color: "#b0c4cc" } },
+                            (ct.name ? ct.name + (ct.title ? " · " + ct.title : "") : "") +
+                            (ct.studentCount ? (ct.name ? " · " : "") + parseInt(ct.studentCount).toLocaleString() + " students" : "")
+                          )
+                        ),
+                        ctRev > 0 && e("span", { style: { fontSize: 12, fontWeight: 700, color: "#35928b", flexShrink: 0, marginLeft: 8 } }, "$" + ctRev.toLocaleString())
+                      );
+                    })
+                  )
                 );
               })
             )
@@ -353,7 +376,7 @@ function AnalyticsDashboard(props) {
           e("div", { style: { fontSize: 12, fontWeight: 700, color: "#8ba7b3", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 } }, "Set Annual Goals"),
           [
             { key:"budget",  label:"Annual Event Budget ($)", placeholder:"e.g. 100000" },
-            { key:"leads",   label:"Leads Target",            placeholder:"e.g. 200"    },
+            { key:"leads",   label:"SQLs Target",             placeholder:"e.g. 200"    },
             { key:"mqls",    label:"MQLs Target",             placeholder:"e.g. 50"     },
             { key:"deals",   label:"Deals Target",            placeholder:"e.g. 10"     },
             { key:"revenue", label:"Revenue Target ($)",      placeholder:"e.g. 500000" }
@@ -367,7 +390,7 @@ function AnalyticsDashboard(props) {
         e("div", null,
           e("div", { style: { fontSize: 12, fontWeight: 700, color: "#8ba7b3", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 } }, "Progress Tracking"),
           e(GoalBar, { label:"Budget Used",        actual:attendedSpend, goal:goals.budget  }),
-          e(GoalBar, { label:"Leads Generated",    actual:totalLeads,    goal:goals.leads   }),
+          e(GoalBar, { label:"SQLs Generated",     actual:totalLeads,    goal:goals.leads   }),
           e(GoalBar, { label:"MQLs",               actual:totalMQLs,     goal:goals.mqls    }),
           e(GoalBar, { label:"Deals Won",          actual:totalDeals,    goal:goals.deals   }),
           e(GoalBar, { label:"Revenue Attributed", actual:totalRevenue,  goal:goals.revenue })
@@ -389,7 +412,7 @@ function AnalyticsDashboard(props) {
         e("table", { style: { width: "100%", borderCollapse: "collapse", fontSize: 12 } },
           e("thead", null,
             e("tr", { style: { borderBottom: "2px solid #e6ecef" } },
-              ["Event","Status","Type","Dates","Cost","Spons.","Total","Leads","MQLs","Deals","Revenue","ROI"].map(function(h) {
+              ["Event","Status","Type","Dates","Cost","Spons.","Total","SQLs","MQLs","Deals","Revenue","ROI"].map(function(h) {
                 return e("th", { key: h, style: { padding: "8px 10px", textAlign: h === "Event" ? "left" : "right", fontWeight: 700, fontSize: 11, color: "#8ba7b3", textTransform: "uppercase", letterSpacing: "0.04em", whiteSpace: "nowrap" } }, h);
               })
             )
