@@ -238,8 +238,8 @@ function AnalyticsDashboard(props) {
           [
             { label: "Cost per SQL",       val: costPerLead    ? "$" + parseInt(costPerLead).toLocaleString()  : "—", sub: "Attended spend ÷ SQLs generated" },
             { label: "Cost per MQL",       val: costPerMQL     ? "$" + parseInt(costPerMQL).toLocaleString()   : "—", sub: "Attended spend ÷ MQLs" },
-            { label: "SQL → MQL Rate",     val: leadToMQLRate  ? leadToMQLRate + "%"                           : "—", sub: "Of SQLs that became MQLs" },
-            { label: "MQL → Deal Rate",    val: mqlToDealRate  ? mqlToDealRate + "%"                           : "—", sub: "Of MQLs that closed as deals" },
+            { label: "MQL → SQL Rate",     val: leadToMQLRate  ? leadToMQLRate + "%"                           : "—", sub: "Of MQLs that converted to SQLs" },
+            { label: "MQL → Closed Won",   val: mqlToDealRate  ? mqlToDealRate + "%"                           : "—", sub: "Of MQLs that closed as won deals" },
             { label: "Avg Revenue / Event",val: avgRevPerEvent ? "$" + parseInt(avgRevPerEvent).toLocaleString(): "—", sub: "Across attended events with revenue" }
           ].map(function(row) {
             return e("div", { key: row.label, style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "#f5f9fc", borderRadius: 8 } },
