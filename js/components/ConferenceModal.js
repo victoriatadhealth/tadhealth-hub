@@ -7,6 +7,30 @@
 // Depends on: constants.js (C, UR), components/SharedUI.js (inp)
 // ═══════════════════════════════════════════════════════════════════════════
 
+// ── Revenue tier calculator ───────────────────────────────────────────────────
+// $5/student  at 20,000+ students
+// $10/student at 10,000–19,999 students
+// $20/student at <10,000 students
+function revenuePerStudent(studentCount) {
+  var n = parseInt(studentCount, 10) || 0;
+  if (n >= 20000) return 5;
+  if (n >= 10000) return 10;
+  return 20;
+}
+function calcContactRevenue(studentCount) {
+  var n = parseInt(studentCount, 10) || 0;
+  if (n <= 0) return 0;
+  return n * revenuePerStudent(n);
+}
+function tierLabel(studentCount) {
+  var n = parseInt(studentCount, 10) || 0;
+  if (n >= 20000) return "$5/student (20K+)";
+  if (n >= 10000) return "$10/student (10K–19.9K)";
+  if (n > 0)      return "$20/student (<10K)";
+  return "—";
+}
+
+// ── Travel helpers ────────────────────────────────────────────────────────────
 function parseTravelEntries(raw) {
   try { var p = typeof raw === "string" ? JSON.parse(raw) : raw; return Array.isArray(p) ? p : []; }
   catch (_) { return []; }
@@ -15,6 +39,16 @@ function emptyTraveler() {
   return { name: "", flight: "", hotel: "", checkIn: "", checkOut: "", notes: "" };
 }
 
+// ── Contact helpers ───────────────────────────────────────────────────────────
+function parseContacts(raw) {
+  try { var p = typeof raw === "string" ? JSON.parse(raw) : raw; return Array.isArray(p) ? p : []; }
+  catch (_) { return []; }
+}
+function emptyContact() {
+  return { name: "", district: "", title: "", studentCount: "", closedWon: false };
+}
+
+// ── Main modal ────────────────────────────────────────────────────────────────
 function ConferenceModal(props) {
   var conf = props.conf, onClose = props.onClose, onSave = props.onSave, onDelete = props.onDelete;
   var isUR = conf.group === "userrev";
@@ -26,6 +60,9 @@ function ConferenceModal(props) {
   var ts2 = useState(parseTravelEntries(conf.travelBookings));
   var travelers = ts2[0]; var setTravelers = ts2[1];
 
+  var cs = useState(parseContacts(conf.contacts));
+  var contacts = cs[0]; var setContacts = cs[1];
+
   function set(k, v) { setF(function(p) { return Object.assign({}, p, { [k]: v }); }); }
 
   function toggleAud(a) {
@@ -33,17 +70,37 @@ function ConferenceModal(props) {
     set("audience", cur.includes(a) ? cur.filter(function(x) { return x !== a; }) : cur.concat([a]));
   }
 
+  // Travel
   function setTraveler(i, k, v) {
     setTravelers(function(prev) {
       return prev.map(function(t, idx) { return idx === i ? Object.assign({}, t, { [k]: v }) : t; });
     });
   }
-
-  function addTraveler() { setTravelers(function(p) { return p.concat([emptyTraveler()]); }); }
+  function addTraveler()     { setTravelers(function(p) { return p.concat([emptyTraveler()]); }); }
   function removeTraveler(i) { setTravelers(function(p) { return p.filter(function(_, idx) { return idx !== i; }); }); }
 
+  // Contacts
+  function setContact(i, k, v) {
+    setContacts(function(prev) {
+      return prev.map(function(c, idx) { return idx === i ? Object.assign({}, c, { [k]: v }) : c; });
+    });
+  }
+  function addContact()     { setContacts(function(p) { return p.concat([emptyContact()]); }); }
+  function removeContact(i) { setContacts(function(p) { return p.filter(function(_, idx) { return idx !== i; }); }); }
+
+  // Auto-calculate total revenue from closed-won contacts
+  var calcRevenue = contacts
+    .filter(function(c) { return c.closedWon; })
+    .reduce(function(sum, c) { return sum + calcContactRevenue(c.studentCount); }, 0);
+
+  var closedWonCount = contacts.filter(function(c) { return c.closedWon; }).length;
+
   function handleSave() {
-    onSave(Object.assign({}, f, { travelBookings: JSON.stringify(travelers) }));
+    onSave(Object.assign({}, f, {
+      travelBookings: JSON.stringify(travelers),
+      contacts:       JSON.stringify(contacts),
+      revenue:        calcRevenue
+    }));
     onClose();
   }
 
@@ -71,6 +128,7 @@ function ConferenceModal(props) {
   }
 
   var lbl = { display: "block", fontWeight: 600, fontSize: 13, color: isUR ? UR.primaryDark : C.oceanDark, marginBottom: 6 };
+  var subLbl = { display: "block", fontWeight: 600, fontSize: 11, color: isUR ? UR.gray : "#8ba7b3", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.04em" };
 
   return e("div", {
     onClick: function(ev) { if (ev.target === ev.currentTarget) onClose(); },
@@ -122,7 +180,6 @@ function ConferenceModal(props) {
         // ── Shared fields (shown on all tabs) ───────────────────────────
         e("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 } },
 
-          // Event name
           e("div", { style: { gridColumn: "1/-1" } },
             e("label", { style: lbl }, "Event Name"),
             e("input", { style: inp, value: f.name || "", onChange: function(ev) { set("name", ev.target.value); } })
@@ -253,15 +310,140 @@ function ConferenceModal(props) {
 
         // ── Logistics tab ───────────────────────────────────────────────
         f._tab === "Logistics" && e("div", null,
-          !isUR && e("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 } },
-            [["Leads Generated","leadsGenerated"],["MQLs","mqls"],["Revenue ($)","revenue"]].map(function(pair) {
-              return e("div", { key: pair[1] },
-                e("label", { style: { display: "block", fontWeight: 600, fontSize: 13, color: C.oceanDark, marginBottom: 6 } }, pair[0]),
-                e("input", { style: inp, type: "number", value: f[pair[1]] || 0, onChange: function(ev) { set(pair[1], +ev.target.value); } })
-              );
-            })
+
+          // BizDev metrics row
+          !isUR && e("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 } },
+            e("div", null,
+              e("label", { style: lbl }, "Leads Generated"),
+              e("input", { style: inp, type: "number", value: f.leadsGenerated || 0, onChange: function(ev) { set("leadsGenerated", +ev.target.value); } })
+            ),
+            e("div", null,
+              e("label", { style: lbl }, "MQLs"),
+              e("input", { style: inp, type: "number", value: f.mqls || 0, onChange: function(ev) { set("mqls", +ev.target.value); } })
+            )
           ),
-          e("div", null,
+
+          // ── Closed Won + Revenue Calculator (BizDev only) ────────────
+          !isUR && e("div", { style: { marginBottom: 20 } },
+
+            // Section header
+            e("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 } },
+              e("div", { style: { fontWeight: 700, fontSize: 13, color: C.oceanDark } }, "🏆 Closed Won Accounts"),
+              // Revenue summary pill
+              e("div", { style: { display: "flex", gap: 10, alignItems: "center" } },
+                e("span", { style: { fontSize: 12, color: "#8ba7b3" } }, closedWonCount + " closed"),
+                e("span", {
+                  style: {
+                    background: calcRevenue > 0 ? C.cyanLight : "#f0f6f9",
+                    color: calcRevenue > 0 ? C.oceanDark : "#8ba7b3",
+                    border: "1.5px solid " + (calcRevenue > 0 ? C.cyan : "#dde6ea"),
+                    borderRadius: 20, padding: "4px 14px", fontSize: 13, fontWeight: 700
+                  }
+                }, "$" + calcRevenue.toLocaleString() + " projected")
+              )
+            ),
+
+            // Pricing tier legend
+            e("div", { style: { display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" } },
+              [
+                { label: "20K+ students", rate: "$5/student",  bg: "#edfaf9", color: "#35928b" },
+                { label: "10K–19.9K",     rate: "$10/student", bg: "#fff8ed", color: "#c87a00" },
+                { label: "<10K students", rate: "$20/student", bg: "#fef5f9", color: "#ae6f8a" },
+              ].map(function(tier) {
+                return e("div", {
+                  key: tier.label,
+                  style: { background: tier.bg, border: "1px solid " + tier.color + "40", borderRadius: 8, padding: "4px 10px", display: "flex", gap: 6, alignItems: "center" }
+                },
+                  e("span", { style: { fontSize: 11, fontWeight: 600, color: tier.color } }, tier.rate),
+                  e("span", { style: { fontSize: 11, color: "#8ba7b3" } }, tier.label)
+                );
+              })
+            ),
+
+            // Empty state
+            contacts.length === 0 && e("div", {
+              style: { textAlign: "center", padding: "20px 0", color: "#8ba7b3", border: "1.5px dashed #dde6ea", borderRadius: 10, marginBottom: 12 }
+            },
+              e("div", { style: { fontSize: 28, marginBottom: 6 } }, "🏫"),
+              e("div", { style: { fontSize: 13 } }, "No contacts yet. Add closed-won accounts below.")
+            ),
+
+            // Contact cards
+            contacts.map(function(ct, i) {
+              var rev = ct.closedWon ? calcContactRevenue(ct.studentCount) : 0;
+              var rate = tierLabel(ct.studentCount);
+              return e("div", {
+                key: i,
+                style: {
+                  background: ct.closedWon ? "#edfaf9" : "#f8fbfc",
+                  border: "1.5px solid " + (ct.closedWon ? "#a8ddd8" : "#dde6ea"),
+                  borderRadius: 12, padding: "14px 16px", marginBottom: 10
+                }
+              },
+                // Contact header row
+                e("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 } },
+                  e("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
+                    // Closed Won toggle
+                    e("button", {
+                      onClick: function() { setContact(i, "closedWon", !ct.closedWon); },
+                      style: {
+                        padding: "4px 12px", borderRadius: 20, cursor: "pointer", fontSize: 11, fontWeight: 700,
+                        border: "1.5px solid " + (ct.closedWon ? "#35928b" : "#dde6ea"),
+                        background: ct.closedWon ? "#35928b" : "transparent",
+                        color: ct.closedWon ? "#fff" : "#8ba7b3"
+                      }
+                    }, ct.closedWon ? "✓ Closed Won" : "○ Not Closed"),
+                    rev > 0 && e("span", { style: { fontSize: 12, fontWeight: 700, color: "#35928b" } }, "$" + rev.toLocaleString())
+                  ),
+                  e("button", {
+                    onClick: function() { removeContact(i); },
+                    style: { background: "none", border: "none", color: "#8ba7b3", fontSize: 16, cursor: "pointer" }
+                  }, "✕")
+                ),
+
+                // Contact fields
+                e("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 } },
+                  e("div", null,
+                    e("label", { style: subLbl }, "Contact Name"),
+                    e("input", { style: Object.assign({}, inp, { fontSize: 13 }), value: ct.name || "", onChange: function(ev) { setContact(i, "name", ev.target.value); }, placeholder: "e.g. Dr. Jane Smith" })
+                  ),
+                  e("div", null,
+                    e("label", { style: subLbl }, "Title"),
+                    e("input", { style: Object.assign({}, inp, { fontSize: 13 }), value: ct.title || "", onChange: function(ev) { setContact(i, "title", ev.target.value); }, placeholder: "e.g. Superintendent" })
+                  ),
+                  e("div", null,
+                    e("label", { style: subLbl }, "District"),
+                    e("input", { style: Object.assign({}, inp, { fontSize: 13 }), value: ct.district || "", onChange: function(ev) { setContact(i, "district", ev.target.value); }, placeholder: "e.g. LAUSD" })
+                  ),
+                  e("div", null,
+                    e("label", { style: subLbl }, "Student Count"),
+                    e("div", { style: { position: "relative" } },
+                      e("input", {
+                        style: Object.assign({}, inp, { fontSize: 13 }),
+                        type: "number", value: ct.studentCount || "",
+                        onChange: function(ev) { setContact(i, "studentCount", ev.target.value); },
+                        placeholder: "e.g. 15000"
+                      }),
+                      ct.studentCount > 0 && e("div", { style: { fontSize: 10, color: "#8ba7b3", marginTop: 3 } }, rate)
+                    )
+                  )
+                )
+              );
+            }),
+
+            // Add contact button
+            e("button", {
+              onClick: addContact,
+              style: {
+                width: "100%", padding: "10px 0", borderRadius: 10,
+                border: "1.5px dashed " + C.cyan, background: "transparent",
+                color: C.cyan, fontWeight: 700, fontSize: 13, cursor: "pointer", marginTop: 4
+              }
+            }, "+ Add Contact")
+          ),
+
+          // Post-event debrief (both sides)
+          e("div", { style: { marginTop: isUR ? 0 : 4 } },
             e("label", { style: lbl }, "Post-Event Debrief"),
             e("textarea", {
               style: Object.assign({}, inp, { minHeight: 80, resize: "vertical" }),
