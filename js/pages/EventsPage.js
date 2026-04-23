@@ -24,20 +24,24 @@ var DEFAULT_UR_CATS = [
 // Persist custom categories in localStorage so edits survive refresh
 function loadCats(key, defaults) {
   try {
-    var raw = localStorage.getItem(key);
+    var store = window.localStorage;
+    var raw = store ? store.getItem(key) : null;
     if (raw) {
       var parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed) || parsed.length === 0) return defaults;
       return parsed.map(function(cat) {
         var def = defaults.find(function(d) { return d.id === cat.id; });
-        return Object.assign({}, cat, { match: def ? def.match : function() { return false; } });
+        return { id: cat.id, label: cat.label, match: def ? def.match : function() { return false; } };
       });
     }
   } catch (_) {}
   return defaults;
 }
 function saveCats(key, cats) {
-  try { localStorage.setItem(key, JSON.stringify(cats.map(function(c) { return { id: c.id, label: c.label }; }))); }
-  catch (_) {}
+  try {
+    var store = window.localStorage;
+    if (store) store.setItem(key, JSON.stringify(cats.map(function(c) { return { id: c.id, label: c.label }; })));
+  } catch (_) {}
 }
 
 // ── Category Editor Modal ────────────────────────────────────────────────────
@@ -129,9 +133,9 @@ function EventsPage(props) {
   var cfs  = useState("all");    var catFilter    = cfs[0]; var setCatFilter    = cfs[1];
   var ems  = useState(false);    var editingCats  = ems[0]; var setEditingCats  = ems[1];
 
-  var bdS  = useState(function() { return loadCats("tad_bd_cats", DEFAULT_BD_CATS); });
+  var bdS  = useState(loadCats("tad_bd_cats", DEFAULT_BD_CATS));
   var bdCats = bdS[0]; var setBdCats = bdS[1];
-  var urS  = useState(function() { return loadCats("tad_ur_cats", DEFAULT_UR_CATS); });
+  var urS  = useState(loadCats("tad_ur_cats", DEFAULT_UR_CATS));
   var urCats = urS[0]; var setUrCats = urS[1];
 
   var noteState = useAnalyticsNote(group);
