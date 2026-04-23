@@ -50,6 +50,9 @@ function confToDb(c) {
     revenue:          c.revenue          || 0,
     attended:         c.attended != null ? c.attended : null,
     debrief:          c.debrief          || null,
+    travel_bookings:  c.travelBookings   || null,
+    resource_link:    c.resourceLink     || null,
+    contacts:         c.contacts         || null,
     updated_at:       new Date().toISOString()
   };
 }
@@ -78,7 +81,10 @@ function confFromDb(r) {
     dealsWon:        r.deals_won        || 0,
     revenue:         r.revenue          || 0,
     attended:        r.attended,
-    debrief:         r.debrief
+    debrief:         r.debrief,
+    travelBookings:  r.travel_bookings,
+    resourceLink:    r.resource_link,
+    contacts:        r.contacts
   };
 }
 
