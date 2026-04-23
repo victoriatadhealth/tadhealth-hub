@@ -46,13 +46,18 @@ function AnalyticsDashboard(props) {
   var attendedSpend  = attended.reduce(function(s,c) { return s + totalCost(c); }, 0);
   var totalLeads     = attended.reduce(function(s,c) { return s + (c.leadsGenerated || 0); }, 0);
   var totalMQLs      = attended.reduce(function(s,c) { return s + (c.mqls || 0); }, 0);
-  var totalDeals     = attended.reduce(function(s,c) { return s + (c.dealsWon || 0); }, 0);
+  var totalDeals     = attended.reduce(function(s,c) {
+    try {
+      var cts = typeof c.contacts === "string" ? JSON.parse(c.contacts) : (c.contacts || []);
+      return s + (Array.isArray(cts) ? cts.filter(function(x) { return x.closedWon; }).length : 0);
+    } catch(_) { return s; }
+  }, 0);
   var totalRevenue   = attended.reduce(function(s,c) { return s + (c.revenue || 0); }, 0);
   var netProfit      = totalRevenue - attendedSpend;
   var overallROI     = attendedSpend > 0 ? ((netProfit / attendedSpend) * 100).toFixed(1) : null;
   var costPerLead    = totalLeads > 0    ? (attendedSpend / totalLeads).toFixed(0)  : null;
   var costPerMQL     = totalMQLs > 0     ? (attendedSpend / totalMQLs).toFixed(0)   : null;
-  var leadToMQLRate  = totalLeads > 0    ? ((totalMQLs / totalLeads) * 100).toFixed(1)   : null;
+  var leadToMQLRate  = totalMQLs > 0     ? ((totalLeads / totalMQLs) * 100).toFixed(1)   : null;
   var mqlToDealRate  = totalMQLs > 0     ? ((totalDeals / totalMQLs) * 100).toFixed(1)   : null;
   var avgRevPerEvent = attended.length > 0 ? (totalRevenue / attended.length).toFixed(0) : null;
 
