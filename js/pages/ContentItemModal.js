@@ -64,13 +64,6 @@ function ContentItemModal(props) {
         e("input", { style: inp, type: "date", value: f.date || "", onChange: function(ev) { set("date", ev.target.value); } })
       ),
 
-      e(Field, { label: "Channel" },
-        e("select", { style: inp, value: f.channel || "", onChange: function(ev) { set("channel", ev.target.value); } },
-          e("option", { value: "" }, "Select channel…"),
-          CAL_CHANNELS.map(function(ch) { return e("option", { key: ch }, ch); })
-        )
-      ),
-
       e(Field, { label: "Platform" },
         e("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
           PLATFORMS.map(function(p) {
