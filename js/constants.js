@@ -69,10 +69,10 @@ var CONTENT_TYPES = [
   {id:"blog",   label:"Blog",          color:"#023F5A", bg:"#e6f2f7"},
   {id:"email",  label:"Email",         color:"#4ACDC4", bg:"#edfaf9"},
   {id:"social", label:"Social",        color:"#f59dc3", bg:"#fef5f9"},
-  {id:"video",  label:"YouTube Video", color:"#f79824", bg:"#fef5e9"}
+  {id:"video",  label:"Video",         color:"#f79824", bg:"#fef5e9"}
 ];
 
-var PLATFORMS = ["Instagram","LinkedIn","Facebook","X"];
+var PLATFORMS = ["Instagram","LinkedIn","Facebook","X","YouTube"];
 
 var CAL_CHANNELS = ["Blog","Email","Social","YouTube","Web"];
 
